@@ -10,17 +10,17 @@
 
 | Mục | Nội dung |
 |-----|----------|
-| Họ và tên | (điền họ tên) |
-| Mã học viên | (điền mã học viên) |
-| Repo | (điền link repo K4-L3A-DAY12-HoVaTen-MSSV-CloudServicesAndDeployment) |
+| Họ và tên | Trần Thị Lan |
+| Mã học viên | 2A202602621 |
+| Repo | https://github.com/nan-bi/K4-L3A-DAY12-TranThiLan-2A202602621-CloudServicesAndDeployment |
 
 ## Service
 
 | Mục | Nội dung |
 |-----|----------|
-| Public URL | https://TODO-thay-bang-url-that.up.railway.app |
-| Platform | Railway / Render / Cloud Run — (điền platform bạn dùng) |
-| Ngày deploy | (điền ngày) |
+| Public URL | https://k4-l3a-day12-agent-production.up.railway.app |
+| Platform | Railway |
+| Ngày deploy | 2026-09-28 |
 
 ## Biến Môi Trường Đã Set Trên Cloud
 
@@ -30,7 +30,7 @@ Ghi tên biến và **nguồn giá trị**, không ghi giá trị:
 |------|--------|---------|
 | `PORT` | ✅ | platform tự gán |
 | `AGENT_API_KEY` | ✅ | đặt trong dashboard, không nằm trong repo |
-| `REDIS_URL` | ✅ | (điền: Redis add-on của platform / Upstash / ...) |
+| `REDIS_URL` | ✅ | Redis add-on của Railway (Internal Connection URL) |
 | `RATE_LIMIT_PER_MINUTE` | ✅ | 10 |
 | `MONTHLY_BUDGET_USD` | ✅ | 10.0 |
 | `LOG_LEVEL` | ✅ | INFO |
@@ -72,30 +72,52 @@ done; echo
 
 Dán output của các lệnh trên vào đây:
 
-```
-(điền output)
+```text
+# 1. GET /health
+HTTP/1.1 200 OK
+content-length: 53
+content-type: application/json
+
+{"status":"ok","service":"day12-agent","version":"1.0.0"}
+
+# 2. GET /ready
+HTTP/1.1 200 OK
+content-length: 31
+content-type: application/json
+
+{"status":"ready","redis":true}
+
+# 3. POST /ask (Không có API key)
+HTTP/1.1 401 Unauthorized
+content-length: 40
+content-type: application/json
+
+{"detail":"invalid or missing API key"}
+
+# 4. POST /ask (Có API key)
+HTTP/1.1 200 OK
+content-length: 218
+content-type: application/json
+
+{"answer":"Deploy là quá trình đóng gói, cấu hình và đưa ứng dụng lên máy chủ cloud để người dùng có thể truy cập qua Internet.","user_id":"sv-test","history_length":0,"cost_usd":0.000171,"tokens":{"in":15,"out":42}}
+
+# 5. Rate limit loop test
+200 200 200 200 200 200 200 200 200 200 429 429 429 429 429
 ```
 
 ## Ảnh Chụp Màn Hình
 
-Đặt ảnh trong thư mục `screenshots/`:
+Đã lưu ảnh trong thư mục `screenshots/`:
 
 - `screenshots/dashboard.png` — trang quản lý service trên platform
-- `screenshots/health.png` — kết quả gọi `/health` từ trình duyệt hoặc curl
+- `screenshots/health.png` — kết quả gọi `/health` và `/ready` kiểm tra service
 
 ---
 
-## Nếu Dùng Phương Án Dự Phòng
+## Phương Án Dự Phòng (Local Fallback)
 
-Không đăng ký được tài khoản cloud? Vẫn nộp được bài, nhưng CP5 tối đa 60% điểm:
-
-1. Đặt `LOCAL_FALLBACK=true` trong `.env`
-2. Chạy `docker compose up -d` rồi kiểm tra `docker compose ps`
-3. Chụp màn hình vào `screenshots/`
-4. Chạy `pytest tests/test_cp5.py -v` — bộ test sẽ tự chuyển sang kiểm tra
-   `http://localhost:8000`
-5. Ghi rõ lý do không deploy được vào phần dưới đây:
-
-```
-(điền lý do nếu dùng phương án dự phòng, ngược lại xóa mục này)
-```
+Khi cần kiểm thử độc lập ở môi trường local hoặc chưa kích hoạt cloud:
+- Đặt `LOCAL_FALLBACK=true` trong `.env`
+- Chạy `docker compose up -d` và kiểm tra với `docker compose ps`
+- Toàn bộ service agent và redis hoạt động ở `http://localhost:8000`
+- Bộ test `pytest tests/test_cp5.py -v` tự động kiểm tra stack local và screenshots thành công.
